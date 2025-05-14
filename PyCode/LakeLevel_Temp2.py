@@ -4,6 +4,7 @@ import re
 #import csv
 
 url = 'https://www.ameren.com/missouri/residential/lake-of-the-ozarks/lake-levels-and-operations'
+#url = 'https://www.python.org'
 
 response = requests.get(url)
 soup = BeautifulSoup(response.content, 'html.parser')
@@ -14,15 +15,17 @@ soup = BeautifulSoup(response.content, 'html.parser')
 # Extracting all the text
 all_text = soup.get_text()
 #entries = re.split("\n+", all_text)
+reportdate = re.search(r"(Report.*)\n(\d\d.*)", all_text, re.MULTILINE)
 lakelevel = re.search(r"(Current.*)\n(\d\d.*)", all_text, re.MULTILINE)
 temp = re.search(r"(Surface.*)\n(\d\d.*)", all_text, re.MULTILINE)
 
-print (lakelevel.group(1))
-print (lakelevel.group(2))
-print (lakelevel)
-print (temp.group(1))
-print (temp.group(2))
-print (temp)
+print (reportdate.group(1)+"  "+reportdate.group(2))
+print (lakelevel.group(1)+"  "+lakelevel.group(2))
+#print (lakelevel.group(2))
+#print (lakelevel)
+print (temp.group(1)+"  "+temp.group(2))
+#print (temp.group(2))
+#print (temp)
 #print (all_text)
 #print (entries)
 # Saving the extracted data to csv
