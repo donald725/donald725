@@ -3,7 +3,8 @@ from bs4 import BeautifulSoup
 import re
 #import csv
 
-url = 'https://www.ameren.com/missouri/residential/lake-of-the-ozarks/lake-levels-and-operations'
+#url = 'https://www.ameren.com/missouri/residential/lake-of-the-ozarks/lake-levels-and-operations'
+url = 'https://www.ameren.com/property/lake-of-the-ozarks/reports'
 #url = 'https://www.python.org'
 
 response = requests.get(url)
