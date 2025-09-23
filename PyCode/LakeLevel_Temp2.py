@@ -1,36 +1,71 @@
 import requests
 from bs4 import BeautifulSoup
 import re
-#import csv
+from typing import Optional, Tuple, Dict
 
-#url = 'https://www.ameren.com/missouri/residential/lake-of-the-ozarks/lake-levels-and-operations'
-url = 'https://www.ameren.com/property/lake-of-the-ozarks/reports'
-#url = 'https://www.python.org'
 
-response = requests.get(url)
-soup = BeautifulSoup(response.content, 'html.parser')
+def fetch_page_text(url: str) -> str:
+	"""Fetch the URL and return the page text (HTML as string).
 
-# Extracting all links
-#links = [a['href'] for a in soup.find_all('a', href=True)]
+	Raises requests.HTTPError on non-2xx responses.
+	"""
+	resp = requests.get(url)
+	resp.raise_for_status()
+	return resp.text
 
-# Extracting all the text
-all_text = soup.get_text()
-#entries = re.split("\n+", all_text)
-reportdate = re.search(r"(Report.*)\n(\d\d.*)", all_text, re.MULTILINE)
-lakelevel = re.search(r"(Current.*)\n(\d\d.*)", all_text, re.MULTILINE)
-temp = re.search(r"(Surface.*)\n(\d\d.*)", all_text, re.MULTILINE)
 
-print (reportdate.group(1)+"  "+reportdate.group(2))
-print (lakelevel.group(1)+"  "+lakelevel.group(2))
-#print (lakelevel.group(2))
-#print (lakelevel)
-print (temp.group(1)+"  "+temp.group(2))
-#print (temp.group(2))
-#print (temp)
-#print (all_text)
-#print (entries)
-# Saving the extracted data to csv
-# with open('data.csv', 'w', newline='', encoding='utf-8') as file:
-#    writer = csv.writer(file)
-#    writer.writerow(['Links', 'Text'])
-#    writer.writerow([links, all_text])
+def soup_from_html(html: str) -> BeautifulSoup:
+	return BeautifulSoup(html, 'html.parser')
+
+
+def parse_text(all_text: str) -> Dict[str, Dict[str, Optional[str]]]:
+	"""Parse the flattened page text and extract report date, lake level and surface temp.
+
+	Returns a dict with keys 'report', 'lake', 'temp' each containing {'label': str|None, 'value': str|None}.
+	The function uses the same regex style as the original script: it expects a label line followed
+	by a value line starting with two digits.
+	"""
+	def find(pattern: str) -> Tuple[Optional[str], Optional[str]]:
+		m = re.search(pattern, all_text, re.MULTILINE)
+		if not m:
+			return None, None
+		return m.group(1).strip(), m.group(2).strip()
+
+	report_label, report_value = find(r"(Report.*)\n(\d\d.*)")
+	lake_label, lake_value = find(r"(Current.*)\n(\d\d.*)")
+	temp_label, temp_value = find(r"(Surface.*)\n(\d\d.*)")
+
+	return {
+		'report': {'label': report_label, 'value': report_value},
+		'lake': {'label': lake_label, 'value': lake_value},
+		'temp': {'label': temp_label, 'value': temp_value},
+	}
+
+
+def extract_from_url(url: str) -> Dict[str, Dict[str, Optional[str]]]:
+	html = fetch_page_text(url)
+	soup = soup_from_html(html)
+	text = soup.get_text()
+	return parse_text(text)
+
+
+def main() -> None:
+	# default behavior preserved for CLI compatibility
+	url = 'https://www.ameren.com/property/lake-of-the-ozarks/reports'
+	try:
+		data = extract_from_url(url)
+	except Exception as e:
+		print(f"Failed to fetch or parse page: {e}")
+		return
+
+	# mirror original printed output style when values are present
+	if data['report']['label'] and data['report']['value']:
+		print(data['report']['label'] + "  " + data['report']['value'])
+	if data['lake']['label'] and data['lake']['value']:
+		print(data['lake']['label'] + "  " + data['lake']['value'])
+	if data['temp']['label'] and data['temp']['value']:
+		print(data['temp']['label'] + "  " + data['temp']['value'])
+
+
+if __name__ == '__main__':
+	main()
