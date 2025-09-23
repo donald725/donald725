@@ -31,7 +31,7 @@ def parse_text(all_text: str) -> Dict[str, Dict[str, Optional[str]]]:
 			return None, None
 		return m.group(1).strip(), m.group(2).strip()
 
-	report_label, report_value = find(r"(Report.*)\n(\d\d.*)")
+	report_label, report_value = find(r"\s*(Lake Level Forecast)\s*(\d\d.*)")
 	lake_label, lake_value = find(r"(Current.*)\n(\d\d.*)")
 	temp_label, temp_value = find(r"(Surface.*)\n(\d\d.*)")
 
@@ -46,6 +46,7 @@ def extract_from_url(url: str) -> Dict[str, Dict[str, Optional[str]]]:
 	html = fetch_page_text(url)
 	soup = soup_from_html(html)
 	text = soup.get_text()
+	print(text)
 	return parse_text(text)
 
 
