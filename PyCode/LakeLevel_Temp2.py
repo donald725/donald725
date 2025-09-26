@@ -46,7 +46,7 @@ def extract_from_url(url: str) -> Dict[str, Dict[str, Optional[str]]]:
 	html = fetch_page_text(url)
 	soup = soup_from_html(html)
 	text = soup.get_text()
-	print(text)
+	# print(text) # uncomment for debugging
 	return parse_text(text)
 
 
