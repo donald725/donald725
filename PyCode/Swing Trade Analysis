@@ -1,0 +1,73 @@
+import yfinance as yf
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# -------------------------
+# SETTINGS
+# -------------------------
+ticker = "AAPL"        # Change to NVDA, MSFT, etc.
+period = "6mo"
+interval = "1d"
+
+# -------------------------
+# DOWNLOAD DATA
+# -------------------------
+df = yf.download(ticker, period=period, interval=interval)
+df.dropna(inplace=True)
+
+# -------------------------
+# INDICATORS
+# -------------------------
+df["EMA20"] = df["Close"].ewm(span=20, adjust=False).mean()
+df["EMA50"] = df["Close"].ewm(span=50, adjust=False).mean()
+
+# RSI Calculation
+delta = df["Close"].diff()
+gain = delta.clip(lower=0)
+loss = -delta.clip(upper=0)
+
+avg_gain = gain.rolling(14).mean()
+avg_loss = loss.rolling(14).mean()
+rs = avg_gain / avg_loss
+df["RSI"] = 100 - (100 / (1 + rs))
+
+# -------------------------
+# STRATEGY CONDITIONS
+# -------------------------
+df["Uptrend"] = (df["Close"] > df["EMA50"]) & (df["EMA20"] > df["EMA50"])
+df["Pullback"] = (df["Close"] <= df["EMA20"]) & (df["RSI"] > 35) & (df["RSI"] < 60)
+
+df["Swing_Setup"] = df["Uptrend"] & df["Pullback"]
+
+# -------------------------
+# PRINT LATEST SIGNAL
+# -------------------------
+latest = df.iloc[-1]
+
+print(f"\nTicker: {ticker}")
+print(f"Close: {latest['Close']:.2f}")
+print(f"EMA20: {latest['EMA20']:.2f}")
+print(f"EMA50: {latest['EMA50']:.2f}")
+print(f"RSI: {latest['RSI']:.2f}")
+
+if latest["Swing_Setup"]:
+    print("✅ POTENTIAL SWING TRADE SETUP FOUND")
+else:
+    print("❌ No valid swing setup today")
+
+# -------------------------
+# PLOT
+# -------------------------
+plt.figure(figsize=(14,7))
+plt.plot(df["Close"], label="Close")
+plt.plot(df["EMA20"], label="EMA 20")
+plt.plot(df["EMA50"], label="EMA 50")
+
+# Mark swing setups
+setup_days = df[df["Swing_Setup"]]
+plt.scatter(setup_days.index, setup_days["Close"], marker="^")
+
+plt.title(f"{ticker} Swing Trading Analysis")
+plt.legend()
+plt.show()
